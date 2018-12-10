@@ -1,4 +1,9 @@
 '''
+Created on 17 Oct. 2018
+
+@author: Edgar
+'''
+'''
 Created on 6 May 2018
 
 @author: Edgar
@@ -12,7 +17,7 @@ import cv2
 
 iHeight = 400
 iWidth = 600
-numberOfPhos = 25
+numberOfPhos = 35
 sigma = 8.712
 phosSep = 14
 kernelSize = 19
@@ -57,14 +62,14 @@ def iKernel(kernelSize):
 # return the segmented vision the the center location of each segmented vision(phosphene)
 def getVision(image, numberOfPhos,  PhosSep, kernelSize):
     visionField = np.zeros((numberOfPhos, numberOfPhos, 2))
-    leftTopCornerR = 199-((numberOfPhos/2)-1) * PhosSep
-    leftTopCornerC = 299-((numberOfPhos/2)-1) * PhosSep
-    visionField[0,0,0] = leftTopCornerR
-    visionField[0,0,1] = leftTopCornerC  
+    rightTopCornerR = 199-((numberOfPhos/2)-1) * PhosSep
+    rightTopCornerC = 299-((numberOfPhos/2)-1) * PhosSep
+    visionField[0,0,0] = rightTopCornerR 
+    visionField[0,0,1] = rightTopCornerC    
     for i in range(0,numberOfPhos,):
         for j in range(0,numberOfPhos):
             visionField[i,j,0] = visionField[0,0,0] + i * PhosSep
-            visionField[i,j,1] = visionField[0,0,1] + j * PhosSep #co-ordinate of the phosphenes (location) The centre of the filtered area
+            visionField[i,j,1] = visionField[0,0,1] + j * PhosSep
           
     L = list()
    
@@ -117,53 +122,37 @@ def scale(image,imageHeight, imageWidth):
     scaled = cv2.resize(image,(imageWidth,imageHeight))
     return scaled
 
-
-cap = cv2.VideoCapture(0)
 kernel, KernelSum = Gkernel(19, 8.712)
 
 
+
+
+img = cv2.imread("timg.jpg",0)
+
+px = img
+print px.shape #(hight, length)
+np.savetxt("foo.txt", img , fmt= '%i')
+print type(img)
+scaled = cv2.resize(img, (600, 400))
+kernel, KernelSum = Gkernel(19, 8.712)
+ik,iksum = iKernel(19)
+scatterVision, visionField  =  getVision(scaled, numberOfPhos, phosSep,kernelSize)
+
+phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
+#phos = applyKernel(numberOfPhos,ik,iksum,scatterVision)
+
+sv = scatterPhos(phos, visionField,numberOfPhos,phoSize)
+
+
+
 while(True):
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-
-    # Our operations on the frame come here
-    #gray = cv2.cvtColor(frame,0)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
-    scaled = scale(gray,iHeight,iWidth)
-    
    
-    #   clustered images
-    #sv = cluster(scaled)
-
-    #normal phosphenes
-  
-    scatterVision, visionField  =  getVision(scaled, numberOfPhos, phosSep,kernelSize)
-    
-    phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
-   
- 
-    sv = scatterPhos(phos, visionField,numberOfPhos,phoSize)
-   
-    #sv = phos
-    #clusters + phosphenes
-    ###############clusters = cluster(phos)
-    #scatterVision, visionField  =  getVision(clusters, numberOfPhos, phosSep,kernelSize)
-    #phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
-    
-    #################sv = scatterPhos(clusters, visionField,numberOfPhos,phoSize)
- 
-    
-    # Display the resulting frame
     cv2.imshow('frame',sv)
-    np.savetxt("foo.txt",sv , fmt= '%i')
+    
     
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
-# When everything done, release the capture
-cap.release()
 cv2.destroyAllWindows()
 
 
