@@ -1,6 +1,9 @@
 import numpy as np 
 import cv2 
 import random
+import csv
+
+#create the mask 
 t1 = np.zeros((19,19))
 t1 = t1.astype('uint8')
 
@@ -202,7 +205,9 @@ myROI = [xn1,yn1,zn1,hn1,xn2,yn2,zn2,hn2]
 cv2.fillPoly(t8, [np.array(myROI)], 255) 
 t2 = np.zeros((600,400))
 t9 = t2.astype('uint8')
+
 t9 = cv2.resize(t9,(600,400))
+
 
 #get coordinate 
 numberOfPhos = 20
@@ -213,8 +218,8 @@ phoSize = 17
 
 
 visionField = np.zeros((numberOfPhos, numberOfPhos, 2))
-leftTopCornerR = 199-((numberOfPhos/2)-1) * phosSep
-leftTopCornerC = 299-((numberOfPhos/2)-1) * phosSep
+leftTopCornerR = 179-((numberOfPhos/2)-1) * phosSep
+leftTopCornerC = 269-((numberOfPhos/2)-1) * phosSep
 visionField[0,0,0] = leftTopCornerR
 visionField[0,0,1] = leftTopCornerC
 for i in range (0,numberOfPhos):
@@ -224,10 +229,20 @@ for i in range (0,numberOfPhos):
 
 
 
-c = 255 #haven't used, pay attention!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+L = list()
+listSize = numberOfPhos * numberOfPhos
+for i in range (0, listSize-1): 
+    L.append([])
+
+c = 401
+#care 
+
+t9 = t9.astype('int64')#use int64 format so the programme will be able to understand the under, but It can be casted back to int8 format later. Using of float/double format will not work at all 
+# c haven't been used, pay attention!!!!!!!!!!!!!!!!
 for i in range(0,numberOfPhos):
     for j in range(0,numberOfPhos):
-        c = c - 1
+        c = c-1
         xn1,yn1,zn1,hn1,xn2,yn2,zn2,hn2 = ranShape()
         t8 = np.zeros((19,19))
         t8 = t8.astype('uint8')
@@ -239,29 +254,180 @@ for i in range(0,numberOfPhos):
         shift2 = random.randint(-10,10)
         h = visionField[i,j,0] + shift1#position shift
         g = visionField[i,j,1] + shift2
-       
         
+                  
+       
+   
         #something other than i and j should be used other wise there will be only one column and one raw.
         for z in range(0,phoSize-1):
             for p in range(0,phoSize-1):
                 a = t9[z+h,p+g]
                 a = a.astype('double')
-                if a == 0:
-                    t9[z+h, p+g] = t10[z,p]
+                b = t10[z,p] 
+                b = b.astype('double')
+                if b == 255:
+                    xc = z+h 
+                    yc = p+g
+                    t9[z+h, p+g] = c
+                    
+                  
+                    #t9[z+h, p+g] = t10[z,p]
+ 
+
+t11 = t9 ###########use t11 to create the mask
+#t11 = t11.astype('float')  
+np.savetxt("fool.txt",t11 , delimiter = ' ', fmt= '%i') 
+#t12 = t11
+t12 = t11.astype('uint8')
+
+
+
+
+
+#####make the list
+
+
+count = 0
+fpx = open('Xf.txt','w')
+fpx.write('')
+fpx.close()
+
+fpy = open('yf.txt','w')
+fpy.write('')
+fpy.close()
+
+
+for i in range (1, numberOfPhos * numberOfPhos + 1 ):
+    count = 0 
+    for g in range (0, 600):
+        for h in range (0,400):
+            if t11[h,g]== i: 
+                count = count + 1
+    print i
+    if i == 400: 
+        print 'stage one finished'           
+                
+    Xarray = np.zeros((1, count))
+    Yarray = np.zeros((1, count))
+    Xarray = Xarray.astype('int')
+    Yarray = Yarray.astype('int')
+     
+    print 'start new loop'
+    #print np.shape(Xarray)[1]
+    position = 0
+    for f in range (0,600):
+        for l in range(0,400):
+            if t11[l,f] == i:
+                Xarray[0,position] = l
+                Yarray[0,position] = f    
+                position = position + 1
+    xArraySize = (np.shape(Xarray))[1]
+    yArraySize = (np.shape(Yarray))[1]
+    
+    
+    
+    print ("the size of phosphene is")  
+    #print (xArraySize)
+    convertedX = str(Xarray.tolist())
+    xString = convertedX.replace('[','')
+    xString = xString.replace(']','')
+    xString = xString.replace(',','')
+    
+    convertedY = str(Yarray.tolist())
+    yString = convertedY.replace('[','')
+    yString = yString.replace(']','')
+    yString = yString.replace(',','')
+    
+    
+    
+    #print (Xarray)
+    fpx = open('xf.txt', 'a')
+    if i < numberOfPhos * numberOfPhos : 
+        fpx.write(xString + '\n')
+    else: 
+        fpx.write(xString)
+
+    fpx.close
+    
+    
+    fpy = open('yf.txt','a')
+    if i < numberOfPhos * numberOfPhos : 
+        fpy.write(yString + '\n')
+    else: 
+        fpy.write(yString)
+
+    fpy.close
+   
+    
+
+#for i in range (1, numberOfPhos*numberOfPhos):
+'''for a single phophene
+count = 0
+for g in range (0,600): 
+    for h in range (0,400):
+        if t11[h,g] == 400:
+            count = count +1
+Xarray = np.zeros((1,count))
+Yarray = np.zeros((1,count))
+Xarray = Xarray.astype('int')
+Yarray = Yarray.astype('int')
+position = 0 
+for g in range (0,600):
+    for h in range(0,400):
+        if t11[h,g] == 400:
+            Xarray[0,position] = h
+            Yarray[0,position] = g 
+            position = position + 1        
+
+xArraySize = (np.shape(Xarray))[1]
+converted = str(Xarray.tolist())
+xString = converted.replace('[','')
+xString = xString.replace(']','')
+xString = xString.replace(',','')
+print xString
+fp = open('f.txt', 'a')
+fp.write(xString + "\n")
+fp.write(xString)
+fp.close()
+'''
+
+''''
+file testing section
+testa = np.array([1,11,111])
+#hhh = str(testa.tolist())
+L[0].append(testa)
+hhh = np.copy(L[0])
+hhh = str(hhh.tolist())
+string = hhh.replace('[','')
+string = string.replace(']','')
+print string
+
+xcorfile = open("csvfile.csv", 'w')
+xcorfile.write(string)
                 #t9[z+h,p+g] = t10[z,p]
         #for q in range(0,phoSize+1):
         #    for w in range(0,phoSize+1):
         #        if t9[q+h,w+g] == 255 : 
         #            t9[q+h,w+g] = c 
-                    
 
+  
                 
 #np.savetxt("fool.txt",t9 , fmt= '%i')
-            
-            
+'''''
+
+
+
+
+
+
+
+    
+    
+    
+    
     
 while (True):
-        cv2.imshow("x",t9)
+        cv2.imshow("x",t12)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
             

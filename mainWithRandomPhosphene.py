@@ -1,23 +1,42 @@
 '''
+Created on 8 Jan. 2019
+
+@author: Edgar
+'''
+'''
 Created on 6 May 2018
 
 @author: Edgar
 '''
 import numpy as np 
 import cv2 
-import datetime
-from test.test_zipimport import NOW
-
-
-#from numpy.core._internal import _commastring
 
 iHeight = 400
 iWidth = 600
-numberOfPhos = 25
+numberOfPhos = 20
 sigma = 8.712
 phosSep = 14
 kernelSize = 19
 phoSize =  3
+
+#open mask
+xfile=open('xf.txt','r')
+yfile=open('yf.txt','r')
+xlines=xfile.readlines()
+ylines=yfile.readlines()
+
+maskListLen = len(xlines)
+XmaskList = list()
+YmaskList = list()
+for i in range(0,maskListLen):
+    XmaskList.append(map(int,xlines[i].split()))
+    YmaskList.append(map(int,ylines[i].split()))
+#the display after random mask
+t = np.zeros((600,400))
+t = t.astype('uint8')
+t = cv2.resize(t,(600,400))
+
+
 #read and scale the image
 def imread (imageName,imageHeight, imageWidth, format ):
     if format == 1 :
@@ -117,10 +136,8 @@ def cluster(image):
 def scale(image,imageHeight, imageWidth):
     scaled = cv2.resize(image,(imageWidth,imageHeight))
     return scaled
-
-
 cap = cv2.VideoCapture(0)
-kernel, KernelSum = Gkernel(19, 8.712)
+kernel, KernelSum = Gkernel(kernelSize, sigma)
 
 
 while(True):
@@ -136,20 +153,17 @@ while(True):
    
     #   clustered images
     #sv = cluster(scaled)
-
+    
     #normal phosphenes
   
     scatterVision, visionField  =  getVision(scaled, numberOfPhos, phosSep,kernelSize)
     
     phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
- 
-    #sv = scatterPhos(phos, visionField,numberOfPhos,phoSize)
-   
-    #sv = phos
-    #clusters + phosphenes
+    
     clusters = cluster(phos)
-    #scatterVision, visionField  =  getVision(clusters, numberOfPhos, phosSep,kernelSize)
-    #phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
+    
+    
+    
     
     Max = float(np.max(clusters))
     Min = float(np.min(clusters))
@@ -166,23 +180,50 @@ while(True):
         for e in range(0,numberOfPhos):
             clusters[d][e] = slop * (clusters[d][e]) + intersection
     clusters = np.int8(clusters)
-        
+    
+    # to apply the random phosphene mask 
+    
+    k = numberOfPhos*numberOfPhos - 1 
+    for i in range (0,numberOfPhos):
+        for j in range(0,numberOfPhos):
+            xline = np.copy(XmaskList[k])
+            yline = np.copy(YmaskList[k])
+            for h in range (0, xline.size):
+                t[xline[h],yline[h]] =  clusters[i][j]
+            k = k - 1
     
     
     
-    sv = scatterPhos(clusters, visionField,numberOfPhos,phoSize)
     
+    '''
+    for i in range(0,maskListLen):
+        xline = np.copy(XmaskList[i])
+        yline = np.copy(YmaskList[i])
+        for j in range(0, xline.size):
+            t[xline[j]][yline[j]] = phos[i]
+    '''        
+            
+            
+            
+            
+            
+            
+ 
+    sv = scatterPhos(phos, visionField,numberOfPhos,phoSize)
+   
+    '''
+    #clusters + phosphenes
+    #clusters = cluster(phos)
+    #scatterVision, visionField  =  getVision(clusters, numberOfPhos, phosSep,kernelSize)
+    #phos = applyKernel(numberOfPhos,kernel,KernelSum,scatterVision)
     
-    
-    
-    
-    
-    
+    #sv = scatterPhos(clusters, visionField,numberOfPhos,phoSize)
+    '''
+
     
 
     # Display the resulting frame
-    cv2.imshow('frame',sv)
-    print datetime.datetime.now()
+    cv2.imshow('frame',t)
     
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -191,12 +232,6 @@ while(True):
 # When everything done, release the capture
 cap.release()
 cv2.destroyAllWindows()
-
-
-
-
-
-
 
 
 
